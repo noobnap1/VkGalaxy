@@ -40,15 +40,15 @@ layout(binding = 0) uniform Camera
 
 layout(push_constant) uniform Params
 {
-	float u_time;
-
-	uint u_numStars;
-
-	float u_starSize;
-	float u_dustSize;
-	float u_h2Size;
-
-	float u_h2DistCheck;
+    float u_time;
+    uint  u_numStars;
+    float u_starSize;
+    float u_dustSize;
+    float u_h2Size;
+    float u_h2DistCheck;
+    float u_galaxyOffsetX;
+    float u_galaxyOffsetY;
+    float u_galaxyOffsetZ;
 };
 
 layout(std140, binding = 1) readonly buffer Particles
@@ -329,7 +329,9 @@ void main()
 	vec3 camRight = vec3(u_view[0][0], u_view[1][0], u_view[2][0]);
 	vec3 camUp    = vec3(u_view[0][1], u_view[1][1], u_view[2][1]);
 	vec2 pos = calc_pos(particle);
-	vec3 worldspacePos = vec3(pos.x, particle.height, pos.y) + ((camRight * a_pos.x) + (camUp * a_pos.z)) * scale;
+	vec3 galaxyOffset = vec3(u_galaxyOffsetX, u_galaxyOffsetY, u_galaxyOffsetZ);
+
+	vec3 worldspacePos = vec3(pos.x, particle.height, pos.y) + galaxyOffset + ((camRight * a_pos.x) + (camUp * a_pos.z)) * scale;
 
 	vec3 color = color_from_temp(particle.temp);
 

@@ -17,7 +17,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 # find source files:
 file(GLOB_RECURSE vkgalaxy_src CONFIGURE_DEPENDS "src/*.cpp" "src/*.c")
-add_executable(${PROJECT_NAME} ${vkgalaxy_src})
+add_executable(${PROJECT_NAME} WIN32 ${vkgalaxy_src})
 
 # find include diretories and libraries
 if(WIN32)
@@ -39,3 +39,21 @@ if(MSVC)
 else()
     set_property(TARGET ${PROJECT_NAME} PROPERTY WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/")
 endif()
+
+# compile shaders:
+file(GLOB_RECURSE vkgalaxy_shader_src CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/assets/shaders/*")
+
+if(WIN32)
+    add_custom_target(vkgalaxy_shaders ALL
+        DEPENDS ${vkgalaxy_shader_src}
+        COMMAND "${CMAKE_SOURCE_DIR}/shader_compile.bat"
+    )
+else()
+    add_custom_target(vkgalaxy_shaders ALL
+        DEPENDS ${vkgalaxy_shader_src}
+        COMMAND sh "${CMAKE_SOURCE_DIR}/shader_compile.sh"
+    )
+endif()
+
+# 🔥 THIS LINE IS THE KEY FIX
+add_dependencies(${PROJECT_NAME} vkgalaxy_shaders)

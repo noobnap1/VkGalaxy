@@ -30,6 +30,17 @@ static void _game_error_log(const char* message, const char* file, int32 line);
 #define ERROR_LOG(m) _game_error_log(m, __FILENAME__, __LINE__)
 
 //----------------------------------------------------------------------------//
+
+// World-space positions of each galaxy. Add or remove entries freely.
+// Spacing of ~10000 puts galaxies clearly apart given a maxRad of 3500.
+static const qm::vec3 GALAXY_OFFSETS[] =
+{
+	{ -5000.0f, 0.0f, 0.0f },
+	{5000.0f, 1000.0f, 0.0f},
+};
+static const uint32 GALAXY_COUNT = sizeof(GALAXY_OFFSETS) / sizeof(GALAXY_OFFSETS[0]);
+
+//----------------------------------------------------------------------------//
 bool game_init(GameState** state)
 {
 	*state = (GameState*)malloc(sizeof(GameState));
@@ -72,27 +83,32 @@ void game_main_loop(GameState* s)
 {
 	f32 lastTime = (f32)glfwGetTime();
 
-	f32 accumTime = 0.0f;
-	uint32 accumFrames = 0;
-
 	while (!glfwWindowShouldClose(s->drawState->instance->window))
 	{
 		f32 curTime = (f32)glfwGetTime();
 		f32 dt = curTime - lastTime;
 		lastTime = curTime;
 
-		accumTime += dt;
-		accumFrames++;
-
 		_game_camera_update(&s->cam, dt, s->drawState->instance->window);
 
+		// Build base draw params from the camera
 		DrawParams drawParams;
 		drawParams.cam.pos = s->cam.pos;
 		drawParams.cam.up = s->cam.up;
 		drawParams.cam.target = s->cam.center;
 		drawParams.cam.dist = s->cam.dist;
 		drawParams.cam.fov = CAMERA_FOV;
-		draw_render(s->drawState, &drawParams, dt);
+
+		// Begin the frame — acquires swapchain image, uploads camera, opens command buffer
+		uint32 frameIdx, imageIdx;
+		if (draw_begin_frame(s->drawState, &drawParams, &frameIdx, &imageIdx))
+		{
+			for (uint32 i = 0; i < GALAXY_COUNT; i++)
+				draw_render_galaxy(s->drawState, &drawParams, frameIdx, imageIdx, GALAXY_OFFSETS[i]);
+
+			// End the frame — closes command buffer, submits, presents
+			draw_end_frame(s->drawState, frameIdx, imageIdx);
+		}
 
 		glfwPollEvents();
 	}
@@ -110,7 +126,7 @@ bool _game_camera_init(GameCamera* cam)
 	cam->up = { 0.0f, 1.0f, 0.0f };
 
 	cam->pos = { 0.0f, 1500.0f, 5000.0f };
-	cam->center = { 0.0f, 0.0f, 0.0f };
+	cam->center = { 0.0f, 0.0f,    0.0f };
 
 	cam->dist = cam->targetDist = 1.0f;
 	cam->angle = cam->targetAngle = 0.0f;
@@ -125,8 +141,8 @@ void _game_camera_update(GameCamera* cam, f32 dt, GLFWwindow* window)
 	f32 angleSpeed = 90.0f * dt;
 	f32 tiltSpeed = 90.0f * dt;
 
-	// 1. Handle Rotations (Free Look)
-	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)  cam->angle -= angleSpeed;
+	// Rotations (arrow keys)
+	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) cam->angle -= angleSpeed;
 	if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) cam->angle += angleSpeed;
 
 	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
@@ -134,7 +150,7 @@ void _game_camera_update(GameCamera* cam, f32 dt, GLFWwindow* window)
 	if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
 		cam->tilt = fminf(cam->tilt + tiltSpeed, CAMERA_MAX_TILT);
 
-	// 2. Calculate the True Forward Direction
+	// True forward direction from yaw + pitch
 	f32 yawRad = cam->angle * (3.14159f / 180.0f);
 	f32 pitchRad = cam->tilt * (3.14159f / 180.0f);
 
@@ -146,31 +162,29 @@ void _game_camera_update(GameCamera* cam, f32 dt, GLFWwindow* window)
 
 	qm::vec3 worldUp = { 0.0f, 1.0f, 0.0f };
 	qm::vec3 right = qm::normalize(qm::cross(forward, worldUp));
+	qm::vec3 camUp = qm::normalize(qm::cross(right, forward));
 
+	// Movement (WASD + EQ)
 	qm::vec3 movement(0.0f, 0.0f, 0.0f);
 
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) movement = movement + forward;
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) movement = movement - forward;
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) movement = movement + right;
 	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) movement = movement - right;
+	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) movement = movement + camUp;
+	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) movement = movement - camUp;
 
-	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) movement = movement + worldUp;
-	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) movement = movement - worldUp;
-
-	// Update camera position directly without decay/inertia
 	if (qm::length(movement) > 0.0f)
-	{
 		cam->pos = cam->pos + (qm::normalize(movement) * camSpeed);
-	}
 
-	// Clamp world bounds
+	// World bounds clamp
 	if (qm::length(cam->pos) > CAMERA_MAX_POSITION)
 		cam->pos = qm::normalize(cam->pos) * CAMERA_MAX_POSITION;
 
-	// 4. Feed the Look-At point to the Renderer
+	// Feed look-at target to renderer
 	cam->center = cam->pos + forward;
 
-	// Sync target properties so inputs don't interpolate from old data
+	// Sync targets so inputs don't interpolate from stale data
 	cam->targetAngle = cam->angle;
 	cam->targetTilt = cam->tilt;
 	cam->targetCenter = cam->pos;
@@ -186,15 +200,15 @@ void _game_camera_cursor_moved(GameCamera* cam, f32 dx, f32 dy)
 	cam->tilt = fmaxf(CAMERA_MIN_TILT, fminf(cam->tilt, CAMERA_MAX_TILT));
 }
 
-void _game_camera_scroll(GameCamera* cam, f32 amt) { }
+void _game_camera_scroll(GameCamera* cam, f32 amt) {}
 
 //----------------------------------------------------------------------------//
 void _game_cursor_pos_callback(GLFWwindow* window, f64 x, f64 y)
 {
 	GameState* s = (GameState*)glfwGetWindowUserPointer(window);
 
-	static f64 lastX = x;
-	static f64 lastY = y;
+	static f64  lastX = x;
+	static f64  lastY = y;
 	static bool firstMouse = true;
 
 	if (firstMouse)
@@ -209,16 +223,20 @@ void _game_cursor_pos_callback(GLFWwindow* window, f64 x, f64 y)
 	lastX = x;
 	lastY = y;
 
-	// Turn camera only when right click is held down
 	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)
 	{
-		_game_camera_cursor_moved(&s->cam, (f32)dx, (f32)dy);
+		_game_camera_cursor_moved(&s->cam, dx, dy);
+		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_CAPTURED);
+	}
+	else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_RELEASE)
+	{
+		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 	}
 }
 
-void _game_key_callback(GLFWwindow* window, int32 key, int32 scancode, int32 action, int32 mods) { }
+void _game_key_callback(GLFWwindow* window, int32 key, int32 scancode, int32 action, int32 mods) {}
 
-void _game_scroll_callback(GLFWwindow* window, f64 x, f64 y) { }
+void _game_scroll_callback(GLFWwindow* window, f64 x, f64 y) {}
 
 //----------------------------------------------------------------------------//
 template<typename T>

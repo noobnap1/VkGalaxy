@@ -7,16 +7,21 @@
 		<BuildType Name="RelWithDebInfo"/>
 		<Platform Name="x64"/>
 	</Configurations>
-	<Project Path="ALL_BUILD.vcxproj" Type="8bc9ceb8-8b4a-11d0-8d11-00a0c91bc942" Id="334f2c8d-f274-34e2-b879-67f2f908b9f0" DefaultStartup="true">
+	<Project Path="ALL_BUILD.vcxproj" Type="8bc9ceb8-8b4a-11d0-8d11-00a0c91bc942" Id="fe920436-f54c-3ee6-960c-8113dcfb0ce1" DefaultStartup="true">
 		<BuildDependency Project="ZERO_CHECK.vcxproj"/>
 		<BuildDependency Project="vkgalaxy.vcxproj"/>
+		<BuildDependency Project="vkgalaxy_shaders.vcxproj"/>
 		<Build Solution="Debug|*" Project="false"/>
 		<Build Solution="Release|*" Project="false"/>
 		<Build Solution="MinSizeRel|*" Project="false"/>
 		<Build Solution="RelWithDebInfo|*" Project="false"/>
 	</Project>
-	<Project Path="ZERO_CHECK.vcxproj" Type="8bc9ceb8-8b4a-11d0-8d11-00a0c91bc942" Id="af208222-035f-37f5-9425-2295cf602672"/>
-	<Project Path="vkgalaxy.vcxproj" Type="8bc9ceb8-8b4a-11d0-8d11-00a0c91bc942" Id="bfa1f1fc-8d1f-3d3e-9378-8c186aecbcc7">
+	<Project Path="ZERO_CHECK.vcxproj" Type="8bc9ceb8-8b4a-11d0-8d11-00a0c91bc942" Id="3dc6bfbb-aa07-3336-bb6c-00e87a552b46"/>
+	<Project Path="vkgalaxy.vcxproj" Type="8bc9ceb8-8b4a-11d0-8d11-00a0c91bc942" Id="32955b5f-237a-3cbe-9a29-d67d1bb584f7">
+		<BuildDependency Project="ZERO_CHECK.vcxproj"/>
+		<BuildDependency Project="vkgalaxy_shaders.vcxproj"/>
+	</Project>
+	<Project Path="vkgalaxy_shaders.vcxproj" Type="8bc9ceb8-8b4a-11d0-8d11-00a0c91bc942" Id="e965bbd2-d01a-3bc7-bf2a-c87da194de7e">
 		<BuildDependency Project="ZERO_CHECK.vcxproj"/>
 	</Project>
 </Solution>

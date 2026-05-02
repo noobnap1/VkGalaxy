@@ -96,6 +96,12 @@ struct DrawParams
 bool draw_init(DrawState** state);
 void draw_quit(DrawState* state);
 
+// Split frame API — call begin once, render_galaxy N times, end once per frame
+bool draw_begin_frame(DrawState* state, DrawParams* params, uint32* outFrameIdx, uint32* outImageIdx);
+void draw_render_galaxy(DrawState* state, DrawParams* params, uint32 frameIdx, uint32 imageIdx, qm::vec3 offset);
+void draw_end_frame(DrawState* state, uint32 frameIdx, uint32 imageIdx);
+
+// Legacy single-galaxy wrapper (calls all three internally)
 void draw_render(DrawState* state, DrawParams* params, f32 dt);
 
 #endif
