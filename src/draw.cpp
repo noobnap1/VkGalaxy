@@ -5,7 +5,6 @@
 #include <malloc.h>
 #endif
 #include <stdio.h>
-#include <string.h>
 
 //----------------------------------------------------------------------------//
 
@@ -155,7 +154,13 @@ bool draw_init(DrawState** state)
 
 	//create render state:
 	//---------------
-	if(!vkh_init(&s->instance, 1920, 1080, "VkGalaxy"))
+	if (s == NULL)
+	{
+		ERROR_LOG("failed to allocate draw state");
+		return false;
+	}
+
+	if(!vkh_init(&s->instance, 854, 480, "VkGalaxy"))
 	{
 		ERROR_LOG("failed to initialize render instance");
 		return false;
@@ -465,6 +470,11 @@ static bool _draw_create_framebuffers(DrawState* s)
 {
 	s->framebufferCount = s->instance->swapchainImageCount;
 	s->framebuffers = (VkFramebuffer*)malloc(s->framebufferCount * sizeof(VkFramebuffer));
+	if (!s->framebuffers)
+	{
+		ERROR_LOG("failed to allocate framebuffer array");
+		return false;
+	}
 
 	for(uint32 i = 0; i < s->framebufferCount; i++)
 	{
@@ -1081,11 +1091,9 @@ static void _draw_record_grid_commands(DrawState* s, DrawParams* params, VkComma
 	if(aspect < 1.0f)
 		aspect = 1.0f / aspect;
 
-	f32 size = aspect * powf(2.0f, roundf(log2f(params->cam.dist) + 0.5f));
+	f32 size = 20000.0f; // or galaxy radius * 2
 
-	qm::vec3 pos = params->cam.target;
-	for(int32 i = 0; i < 3; i++)
-		pos[i] -= fmodf(pos[i], size / numCells);
+	qm::vec3 pos = { 0.0f, 0.0f, 0.0f };
 
 	qm::mat4 model = qm::translate(pos) * qm::scale(qm::vec3(size, size, size));
 

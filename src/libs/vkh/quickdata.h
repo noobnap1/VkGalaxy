@@ -1070,6 +1070,7 @@ void QD_PREFIX(ll_insert)(QDlinkedList* list, QDllNode* pred, void* elem)
 		list->dataBuffs = (void**)QD_REALLOC(list->dataBuffs, (numBuffs + 1) * sizeof(void*));
 
 		list->nodeBuffs[numBuffs] = (_QDllBlock*)QD_MALLOC(list->cap * sizeof(_QDllBlock));
+		
 		list->dataBuffs[numBuffs] = QD_MALLOC(list->cap * list->elemSize);
 
 		for(size_t i = 0; i < list->cap; i++)

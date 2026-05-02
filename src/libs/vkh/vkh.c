@@ -377,16 +377,16 @@ void vkh_free_spirv(uint32_t* code)
 
 VkShaderModule vkh_create_shader_module(VKHinstance* inst, uint64_t codeSize, uint32_t* code)
 {
-	VkShaderModuleCreateInfo moduleInfo = {0};
+	VkShaderModuleCreateInfo moduleInfo = { 0 };
 	moduleInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 	moduleInfo.codeSize = codeSize;
 	moduleInfo.pCode = code;
 
 	VkShaderModule module;
-	if(vkCreateShaderModule(inst->device, &moduleInfo, NULL, &module) != VK_SUCCESS)
+	if (vkCreateShaderModule(inst->device, &moduleInfo, NULL, &module) != VK_SUCCESS)
 	{
 		ERROR_LOG("failed to create shader module");
-		return module;
+		return VK_NULL_HANDLE;
 	}
 
 	return module;

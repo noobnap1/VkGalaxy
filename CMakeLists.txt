@@ -39,12 +39,3 @@ if(MSVC)
 else()
     set_property(TARGET ${PROJECT_NAME} PROPERTY WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/")
 endif()
-
-# compile shaders:
-file(GLOB_RECURSE vkgalaxy_shader_src CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/assets/shaders/*")
-
-if(WIN32)
-    add_custom_target(vkgalaxy_shaders ALL DEPENDS ${vkgalaxy_shader_src} COMMAND "${CMAKE_SOURCE_DIR}/shader_compile.bat")
-else()
-    add_custom_target(vkgalaxy_shaders ALL DEPENDS ${vkgalaxy_shader_src} COMMAND sh "${CMAKE_SOURCE_DIR}/shader_compile.sh")
-endif()

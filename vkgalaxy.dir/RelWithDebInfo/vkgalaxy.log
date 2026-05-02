@@ -1,0 +1,8 @@
+﻿  Building Custom Rule D:/source/repos/VkGalaxy - Copy/CMakeLists.txt
+  draw.cpp
+  game.cpp
+  main.cpp
+  Generating Code...
+  vkh.c
+MSVCRT.lib(exe_main.obj) : error LNK2019: unresolved external symbol main referenced in function "int __cdecl __scrt_common_main_seh(void)" (?__scrt_common_main_seh@@YAHXZ)
+D:\source\repos\VkGalaxy - Copy\bin\RelWithDebInfo\vkgalaxy.exe : fatal error LNK1120: 1 unresolved externals
